@@ -9,10 +9,22 @@ on:
 permissions:
   contents: read
 
+# Em pull requests, cancela a execução anterior quando chega um commit novo.
+# Na main nenhuma execução é cancelada, para manter o histórico completo.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# "shell: bash" ativa o pipefail: se um comando antes do "tee" falhar, o passo falha.
+defaults:
+  run:
+    shell: bash
+
 jobs:
   qualidade:
     name: Qualidade
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Baixar o código
         uses: actions/checkout@v6
@@ -26,8 +38,44 @@ jobs:
       - name: Instalar dependências
         run: npm ci
 
-      - name: Análise estática (ESLint)
-        run: npm run lint
+      - name: Preparar pasta de logs
+        run: mkdir -p logs
 
-      - name: Testes automatizados
-        run: npm test
+      - name: Análise estática (ESLint)
+        run: npm run lint 2>&1 | tee logs/lint.log
+
+      - name: Testes unitários
+        run: npm run test:unit 2>&1 | tee logs/testes-unitarios.log
+
+      - name: Testes de integração
+        run: npm run test:integration 2>&1 | tee logs/testes-integracao.log
+
+      - name: Testes de ponta a ponta (E2E)
+        run: npm run test:e2e 2>&1 | tee logs/testes-e2e.log
+
+      # Coverage gate: o Jest termina com erro se a cobertura ficar abaixo dos
+      # limites definidos em jest.config.js (80% de branches, 85% de linhas e statements).
+      - name: Cobertura com limite mínimo (coverage gate)
+        run: npm run test:coverage 2>&1 | tee logs/cobertura.log
+
+      - name: Publicar resumo da cobertura
+        if: ${{ !cancelled() }}
+        run: node scripts/coverage-summary.js >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publicar relatório de cobertura como artefato
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: relatorio-de-cobertura
+          path: coverage/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Publicar logs do build como artefato
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: logs-do-build
+          path: logs/
+          if-no-files-found: warn
+          retention-days: 14

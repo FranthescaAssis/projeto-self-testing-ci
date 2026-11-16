@@ -55,6 +55,10 @@ curl "http://localhost:3000/accounts/ID_DA_ANA/statement?type=debit&from=2026-11
 | `npm run test:coverage` | Suíte completa com relatório de cobertura em `coverage/` |
 | `npm run lint` | Análise estática com ESLint |
 
+A cobertura mínima exigida é de 80% de branches e 85% de linhas, statements e funções.
+Os limites ficam em `jest.config.js` e o comando `npm run test:coverage` falha quando
+algum deles não é atingido. O pipeline de CI usa esse mesmo comando como *coverage gate*.
+
 ## Estrutura
 
 ```text
