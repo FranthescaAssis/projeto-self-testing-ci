@@ -22,4 +22,29 @@ class InsufficientFundsError extends DomainError {
   }
 }
 
-module.exports = { DomainError, ValidationError, InsufficientFundsError };
+class AccountNotFoundError extends DomainError {
+  constructor(accountId) {
+    super('ACCOUNT_NOT_FOUND', `Conta não encontrada: ${accountId}`);
+  }
+}
+
+class DocumentRejectedError extends DomainError {
+  constructor() {
+    super('DOCUMENT_REJECTED', 'Situação cadastral irregular para o documento informado');
+  }
+}
+
+class DocumentAlreadyRegisteredError extends DomainError {
+  constructor() {
+    super('DOCUMENT_ALREADY_REGISTERED', 'Já existe uma conta para o documento informado');
+  }
+}
+
+module.exports = {
+  DomainError,
+  ValidationError,
+  InsufficientFundsError,
+  AccountNotFoundError,
+  DocumentRejectedError,
+  DocumentAlreadyRegisteredError,
+};
