@@ -24,7 +24,15 @@ class TransactionRepository {
          VALUES
            (@id, @accountId, @transferId, @type, @amount, @balanceAfter, @counterpartyAccountId, @description, @createdAt)`,
       ),
-      listByAccount: db.prepare('SELECT * FROM transactions WHERE account_id = ? ORDER BY seq'),
+      // Cada filtro é opcional: quando o parâmetro é nulo, a condição é ignorada.
+      listByAccount: db.prepare(
+        `SELECT * FROM transactions
+          WHERE account_id = @accountId
+            AND (@from IS NULL OR created_at >= @from)
+            AND (@to IS NULL OR created_at <= @to)
+            AND (@type IS NULL OR type = @type)
+          ORDER BY seq`,
+      ),
     };
   }
 
@@ -32,8 +40,8 @@ class TransactionRepository {
     this.statements.insert.run(entry);
   }
 
-  listByAccount(accountId) {
-    return this.statements.listByAccount.all(accountId).map(toEntry);
+  listByAccount(accountId, { from = null, to = null, type = null } = {}) {
+    return this.statements.listByAccount.all({ accountId, from, to, type }).map(toEntry);
   }
 }
 

@@ -5,6 +5,7 @@ const { TransferRepository } = require('../../src/repositories/transfer-reposito
 const { IdempotencyRepository } = require('../../src/repositories/idempotency-repository');
 const { AccountService } = require('../../src/services/account-service');
 const { TransferService } = require('../../src/services/transfer-service');
+const { StatementService } = require('../../src/services/statement-service');
 const { createRegistryValidatorStub, createFraudGatewayMock, createFixedClock } = require('./test-doubles');
 
 // CPFs fictícios com dígitos verificadores válidos, usados apenas em testes.
@@ -42,6 +43,8 @@ function createTestContext({ fraudGateway = createFraudGatewayMock() } = {}) {
     clock,
   });
 
+  const statementService = new StatementService({ accountRepository, transactionRepository });
+
   let nextCpf = 0;
   async function openAccount(ownerName, initialBalance) {
     return accountService.createAccount({ ownerName, document: TEST_CPFS[nextCpf++], initialBalance });
@@ -56,6 +59,7 @@ function createTestContext({ fraudGateway = createFraudGatewayMock() } = {}) {
     transferRepository,
     accountService,
     transferService,
+    statementService,
     openAccount,
     close: () => db.close(),
   };
