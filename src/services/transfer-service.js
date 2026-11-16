@@ -87,11 +87,9 @@ class TransferService {
       return { transfer: record, replayed: false };
     });
 
-    if (replayed) {
-      return { transfer, replayed };
+    if (!replayed) {
+      await this.notifyFraudGateway(transfer);
     }
-
-    await this.notifyFraudGateway(transfer);
     return { transfer, replayed };
   }
 
