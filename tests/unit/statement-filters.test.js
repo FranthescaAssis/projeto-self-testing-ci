@@ -7,11 +7,23 @@ describe('parseStatementFilters', () => {
     expect(parseStatementFilters()).toEqual({ from: null, to: null, type: null });
   });
 
-  it('converte as datas do período para instantes em UTC', () => {
-    const filters = parseStatementFilters({ from: '2026-11-01', to: '2026-11-30' });
+  it('converte a data inicial para o primeiro instante do dia em UTC', () => {
+    const filters = parseStatementFilters({ from: '2026-11-01' });
 
     expect(filters.from).toBe('2026-11-01T00:00:00.000Z');
-    expect(filters.to).toBe('2026-11-30T00:00:00.000Z');
+  });
+
+  it('converte a data final para o último instante do dia em UTC (período inclusivo)', () => {
+    const filters = parseStatementFilters({ to: '2026-11-30' });
+
+    expect(filters.to).toBe('2026-11-30T23:59:59.999Z');
+  });
+
+  it('cobre o dia inteiro quando a data inicial e a final são iguais', () => {
+    const filters = parseStatementFilters({ from: '2026-11-10', to: '2026-11-10' });
+
+    expect(filters.from).toBe('2026-11-10T00:00:00.000Z');
+    expect(filters.to).toBe('2026-11-10T23:59:59.999Z');
   });
 
   it('aceita apenas a data inicial ou apenas a data final', () => {

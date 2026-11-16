@@ -85,6 +85,18 @@ describe('StatementService (SQLite em memória)', () => {
     expect(summarize(statement).map(([date]) => date)).toEqual(['2026-11-01', '2026-11-05', '2026-11-10']);
   });
 
+  it('inclui os lançamentos feitos no próprio dia da data final', () => {
+    const statement = context.statementService.getStatement(ana.id, { to: '2026-11-10' });
+
+    expect(summarize(statement).map(([date]) => date)).toEqual(['2026-11-01', '2026-11-05', '2026-11-10']);
+  });
+
+  it('devolve os lançamentos de um único dia quando from e to são iguais', () => {
+    const statement = context.statementService.getStatement(ana.id, { from: '2026-11-15', to: '2026-11-15' });
+
+    expect(summarize(statement)).toEqual([['2026-11-15', 'DEBIT', 1500, 7000]]);
+  });
+
   it('combina período e tipo de lançamento', () => {
     const statement = context.statementService.getStatement(ana.id, {
       from: '2026-11-02',
