@@ -1,5 +1,10 @@
 const { createTestContext } = require('../support/test-context');
-const { ValidationError, InsufficientFundsError, AccountNotFoundError } = require('../../src/domain/errors');
+const {
+  ValidationError,
+  InsufficientFundsError,
+  AccountNotFoundError,
+  IdempotencyConflictError,
+} = require('../../src/domain/errors');
 
 describe('TransferService (SQLite em memória + mock do anti-fraude)', () => {
   let context;
@@ -200,6 +205,82 @@ describe('TransferService (SQLite em memória + mock do anti-fraude)', () => {
       expect(context.accountRepository.findById(ana.id).balance).toBe(10000);
       expect(context.accountRepository.findById(bruno.id).balance).toBe(2500);
       expect(context.fraudGateway.notifyTransfer).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('idempotência (RF07)', () => {
+    it('informa que a primeira execução não é uma repetição', async () => {
+      const result = await context.transferService.transfer(transferRequest());
+
+      expect(result.replayed).toBe(false);
+    });
+
+    it('devolve a transferência original quando a mesma chave é reenviada', async () => {
+      const request = transferRequest({ amount: 3000 });
+
+      const first = await context.transferService.transfer(request);
+      const second = await context.transferService.transfer(request);
+
+      expect(second.replayed).toBe(true);
+      expect(second.transfer).toEqual(first.transfer);
+    });
+
+    it('debita a origem uma única vez mesmo com a requisição repetida', async () => {
+      const request = transferRequest({ amount: 3000 });
+
+      await context.transferService.transfer(request);
+      await context.transferService.transfer(request);
+      await context.transferService.transfer(request);
+
+      expect(context.accountRepository.findById(ana.id).balance).toBe(7000);
+      expect(context.accountRepository.findById(bruno.id).balance).toBe(5500);
+      expect(context.transactionRepository.listByAccount(ana.id)).toHaveLength(2);
+    });
+
+    it('não notifica o anti-fraude novamente em requisições repetidas', async () => {
+      const request = transferRequest();
+
+      await context.transferService.transfer(request);
+      await context.transferService.transfer(request);
+
+      expect(context.fraudGateway.notifyTransfer).toHaveBeenCalledTimes(1);
+    });
+
+    it('recusa o reuso da chave com dados diferentes dos originais', async () => {
+      const request = transferRequest({ amount: 3000 });
+      await context.transferService.transfer(request);
+
+      const attempt = context.transferService.transfer({ ...request, amount: 3001 });
+
+      await expect(attempt).rejects.toThrow(IdempotencyConflictError);
+      await expect(attempt).rejects.toThrow('A chave de idempotência já foi usada com dados diferentes');
+      expect(context.accountRepository.findById(ana.id).balance).toBe(7000);
+    });
+
+    it('trata chaves diferentes como transferências diferentes', async () => {
+      const first = await context.transferService.transfer(transferRequest({ amount: 1000 }));
+      const second = await context.transferService.transfer(transferRequest({ amount: 1000 }));
+
+      expect(second.transfer.id).not.toBe(first.transfer.id);
+      expect(context.accountRepository.findById(ana.id).balance).toBe(8000);
+    });
+
+    it('não registra a chave quando a transferência é recusada, permitindo nova tentativa', async () => {
+      const request = transferRequest({ amount: 10001 });
+      await expect(context.transferService.transfer(request)).rejects.toThrow(InsufficientFundsError);
+
+      context.accountRepository.updateBalance(ana.id, 20000);
+      const retry = await context.transferService.transfer(request);
+
+      expect(retry.replayed).toBe(false);
+      expect(context.accountRepository.findById(ana.id).balance).toBe(9999);
+    });
+
+    it.each([undefined, '', '   '])('exige a chave de idempotência (%p)', async (idempotencyKey) => {
+      const attempt = context.transferService.transfer(transferRequest({ idempotencyKey }));
+
+      await expect(attempt).rejects.toThrow(ValidationError);
+      await expect(attempt).rejects.toThrow('O cabeçalho Idempotency-Key é obrigatório');
     });
   });
 });
