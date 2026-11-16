@@ -59,6 +59,21 @@ A cobertura mínima exigida é de 80% de branches e 85% de linhas, statements e 
 Os limites ficam em `jest.config.js` e o comando `npm run test:coverage` falha quando
 algum deles não é atingido. O pipeline de CI usa esse mesmo comando como *coverage gate*.
 
+## Teste de carga
+
+O teste de carga usa o [Locust](https://locust.io/) e simula 50 usuários simultâneos
+no endpoint de transferência durante 30 segundos.
+
+```bash
+pip install -r load/requirements.txt   # uma única vez
+npm start                              # em um terminal
+npm run test:load                      # em outro terminal
+```
+
+Ao final, o script grava `load/results/resumo.md` e `load/results/resumo.json` e termina
+com erro se a taxa de erro for de 1% ou mais, se a latência média passar de 500 ms ou se
+a soma dos saldos das contas não for igual à soma inicial.
+
 ## Estrutura
 
 ```text
@@ -71,4 +86,5 @@ tests/unit                 Testes unitários (TDD)
 tests/integration          Testes com banco em memória, mocks e stubs
 tests/e2e                  Testes de ponta a ponta
 tests/support              Test doubles e utilitários compartilhados
+load/locustfile.py         Teste de carga do endpoint de transferência
 ```
