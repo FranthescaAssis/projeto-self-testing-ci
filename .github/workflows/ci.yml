@@ -79,3 +79,68 @@ jobs:
           path: logs/
           if-no-files-found: warn
           retention-days: 14
+
+  carga:
+    name: Teste de carga
+    needs: qualidade
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v6
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Configurar Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: load/requirements.txt
+
+      - name: Instalar dependências
+        run: |
+          npm ci
+          pip install -r load/requirements.txt
+
+      - name: Subir a API
+        run: |
+          mkdir -p logs
+          npm start > logs/api.log 2>&1 &
+          for tentativa in $(seq 1 30); do
+            if curl --silent --fail http://localhost:3000/health > /dev/null; then
+              echo "API no ar após ${tentativa}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "A API não respondeu a tempo"
+          cat logs/api.log
+          exit 1
+
+      # O script falha se a taxa de erro, a latência média ou a conciliação
+      # dos saldos ficarem fora dos limites definidos em load/locustfile.py.
+      - name: Executar teste de carga (50 usuários simultâneos)
+        run: npm run test:load 2>&1 | tee logs/carga.log
+
+      - name: Publicar resumo do teste de carga
+        if: ${{ !cancelled() }}
+        run: |
+          if [ -f load/results/resumo.md ]; then
+            cat load/results/resumo.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Publicar resultado do teste de carga como artefato
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: resultado-teste-de-carga
+          path: |
+            load/results/
+            logs/
+          if-no-files-found: warn
+          retention-days: 14
