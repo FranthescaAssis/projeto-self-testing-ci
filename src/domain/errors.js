@@ -16,4 +16,10 @@ class ValidationError extends DomainError {
   }
 }
 
-module.exports = { DomainError, ValidationError };
+class InsufficientFundsError extends DomainError {
+  constructor(message) {
+    super('INSUFFICIENT_FUNDS', message);
+  }
+}
+
+module.exports = { DomainError, ValidationError, InsufficientFundsError };
