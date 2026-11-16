@@ -15,7 +15,8 @@
     "test:unit": "jest --selectProjects unit",
     "test:integration": "jest --selectProjects integration",
     "test:e2e": "jest --selectProjects e2e",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "test:load": "locust -f load/locustfile.py --headless --users 50 --spawn-rate 50 --run-time 30s --host http://localhost:3000 --csv load/results/carga --only-summary"
   },
   "dependencies": {
     "better-sqlite3": "^12.11.1",
