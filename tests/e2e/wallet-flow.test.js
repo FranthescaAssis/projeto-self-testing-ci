@@ -24,7 +24,7 @@ describe('Wallet API de ponta a ponta (requisições HTTP reais)', () => {
       },
       {
         registryValidator: new LocalRegistryValidator({ irregularDocuments: [CPF_IRREGULAR] }),
-        logger: { error: jest.fn() },
+        logger: { warn: jest.fn(), error: jest.fn() },
       },
     );
     await new Promise((resolve) => {
@@ -261,6 +261,19 @@ describe('Wallet API de ponta a ponta (requisições HTTP reais)', () => {
         code: 'ROUTE_NOT_FOUND',
         message: 'Rota não encontrada: GET /rota-que-nao-existe',
       });
+    });
+  });
+
+  describe('resiliência', () => {
+    it('responde 201 e efetiva a transferência mesmo com o anti-fraude fora do ar', async () => {
+      const ana = await openAccount('Ana Souza', CPF_ANA, 100000);
+      const bruno = await openAccount('Bruno Lima', CPF_BRUNO, 0);
+      antifraud.respondWith(503);
+
+      await transfer({ sourceAccountId: ana.id, targetAccountId: bruno.id, amount: 5000 }).expect(201);
+
+      const brunoAfter = await api.get(`/accounts/${bruno.id}`);
+      expect(brunoAfter.body.balance).toBe(5000);
     });
   });
 

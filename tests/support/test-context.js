@@ -16,6 +16,7 @@ const TEST_CPFS = ['52998224725', '11144477735', '12345678909', '98765432100', '
  * dependências externas por test doubles (stub cadastral e mock do anti-fraude).
  */
 function createTestContext({ fraudGateway = createFraudGatewayMock() } = {}) {
+  const logger = { warn: jest.fn(), error: jest.fn() };
   const db = createDatabase(':memory:');
   const clock = createFixedClock();
   const runInTransaction = createTransactionRunner(db);
@@ -41,6 +42,7 @@ function createTestContext({ fraudGateway = createFraudGatewayMock() } = {}) {
     fraudGateway,
     runInTransaction,
     clock,
+    logger,
   });
 
   const statementService = new StatementService({ accountRepository, transactionRepository });
@@ -53,6 +55,7 @@ function createTestContext({ fraudGateway = createFraudGatewayMock() } = {}) {
   return {
     db,
     clock,
+    logger,
     fraudGateway,
     accountRepository,
     transactionRepository,
