@@ -27,14 +27,8 @@ class TransferService {
     // Leitura dos saldos, cálculo e gravação acontecem em uma única transação
     // imediata: duas transferências simultâneas nunca leem o mesmo saldo.
     const transfer = this.runInTransaction(() => {
-      const source = this.accountRepository.findById(sourceAccountId);
-      if (!source) {
-        throw new AccountNotFoundError(sourceAccountId);
-      }
-      const target = this.accountRepository.findById(targetAccountId);
-      if (!target) {
-        throw new AccountNotFoundError(targetAccountId);
-      }
+      const source = this.findAccount(sourceAccountId);
+      const target = this.findAccount(targetAccountId);
 
       const balances = calculateTransfer({
         sourceBalance: source.balance,
@@ -53,27 +47,19 @@ class TransferService {
       this.accountRepository.updateBalance(source.id, balances.sourceBalance);
       this.accountRepository.updateBalance(target.id, balances.targetBalance);
       this.transferRepository.insert(record);
-      this.transactionRepository.insert({
-        id: this.idGenerator(),
+      this.recordEntry(record, {
         accountId: source.id,
-        transferId: record.id,
-        type: 'DEBIT',
-        amount,
-        balanceAfter: balances.sourceBalance,
         counterpartyAccountId: target.id,
+        type: 'DEBIT',
+        balanceAfter: balances.sourceBalance,
         description: 'Transferência enviada',
-        createdAt: record.createdAt,
       });
-      this.transactionRepository.insert({
-        id: this.idGenerator(),
+      this.recordEntry(record, {
         accountId: target.id,
-        transferId: record.id,
-        type: 'CREDIT',
-        amount,
-        balanceAfter: balances.targetBalance,
         counterpartyAccountId: source.id,
+        type: 'CREDIT',
+        balanceAfter: balances.targetBalance,
         description: 'Transferência recebida',
-        createdAt: record.createdAt,
       });
 
       return record;
@@ -89,6 +75,24 @@ class TransferService {
     });
 
     return { transfer };
+  }
+
+  findAccount(accountId) {
+    const account = this.accountRepository.findById(accountId);
+    if (!account) {
+      throw new AccountNotFoundError(accountId);
+    }
+    return account;
+  }
+
+  recordEntry(transfer, entry) {
+    this.transactionRepository.insert({
+      id: this.idGenerator(),
+      transferId: transfer.id,
+      amount: transfer.amount,
+      createdAt: transfer.createdAt,
+      ...entry,
+    });
   }
 }
 
