@@ -13,11 +13,19 @@ const SCHEMA = `
     created_at  TEXT NOT NULL
   );
 
+  CREATE TABLE IF NOT EXISTS transfers (
+    id                 TEXT PRIMARY KEY,
+    source_account_id  TEXT NOT NULL REFERENCES accounts (id),
+    target_account_id  TEXT NOT NULL REFERENCES accounts (id),
+    amount             INTEGER NOT NULL CHECK (amount > 0),
+    created_at         TEXT NOT NULL
+  );
+
   CREATE TABLE IF NOT EXISTS transactions (
     seq                      INTEGER PRIMARY KEY AUTOINCREMENT,
     id                       TEXT NOT NULL UNIQUE,
     account_id               TEXT NOT NULL REFERENCES accounts (id),
-    transfer_id              TEXT,
+    transfer_id              TEXT REFERENCES transfers (id),
     type                     TEXT NOT NULL CHECK (type IN ('DEBIT', 'CREDIT')),
     amount                   INTEGER NOT NULL CHECK (amount > 0),
     balance_after            INTEGER NOT NULL CHECK (balance_after >= 0),
