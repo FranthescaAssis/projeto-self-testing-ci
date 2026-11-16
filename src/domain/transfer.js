@@ -20,13 +20,15 @@ function calculateTransfer({ sourceBalance, targetBalance, amount }) {
   };
 }
 
+function assertAccountId(value, field) {
+  if (typeof value !== 'string' || value.trim() === '') {
+    throw new ValidationError(`${field} é obrigatório`);
+  }
+}
+
 function validateTransferRequest({ sourceAccountId, targetAccountId, amount }) {
-  if (typeof sourceAccountId !== 'string' || sourceAccountId.trim() === '') {
-    throw new ValidationError('sourceAccountId é obrigatório');
-  }
-  if (typeof targetAccountId !== 'string' || targetAccountId.trim() === '') {
-    throw new ValidationError('targetAccountId é obrigatório');
-  }
+  assertAccountId(sourceAccountId, 'sourceAccountId');
+  assertAccountId(targetAccountId, 'targetAccountId');
   if (sourceAccountId === targetAccountId) {
     throw new ValidationError('Conta de origem e conta de destino devem ser diferentes');
   }
