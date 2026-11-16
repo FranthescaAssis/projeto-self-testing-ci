@@ -8,7 +8,8 @@ const { assertValidAmount, formatCents } = require('./money');
 function calculateTransfer({ sourceBalance, targetBalance, amount }) {
   assertValidAmount(amount);
 
-  if (sourceBalance < amount) {
+  // ALTERAÇÃO PROPOSITALMENTE ERRADA: usada apenas para demonstrar o bloqueio do pipeline.
+  if (sourceBalance <= amount) {
     throw new InsufficientFundsError(
       `Saldo insuficiente: disponível ${formatCents(sourceBalance)}, solicitado ${formatCents(amount)}`,
     );
