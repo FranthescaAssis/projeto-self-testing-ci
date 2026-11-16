@@ -13,11 +13,19 @@ const SCHEMA = `
     created_at  TEXT NOT NULL
   );
 
+  CREATE TABLE IF NOT EXISTS transfers (
+    id                 TEXT PRIMARY KEY,
+    source_account_id  TEXT NOT NULL REFERENCES accounts (id),
+    target_account_id  TEXT NOT NULL REFERENCES accounts (id),
+    amount             INTEGER NOT NULL CHECK (amount > 0),
+    created_at         TEXT NOT NULL
+  );
+
   CREATE TABLE IF NOT EXISTS transactions (
     seq                      INTEGER PRIMARY KEY AUTOINCREMENT,
     id                       TEXT NOT NULL UNIQUE,
     account_id               TEXT NOT NULL REFERENCES accounts (id),
-    transfer_id              TEXT,
+    transfer_id              TEXT REFERENCES transfers (id),
     type                     TEXT NOT NULL CHECK (type IN ('DEBIT', 'CREDIT')),
     amount                   INTEGER NOT NULL CHECK (amount > 0),
     balance_after            INTEGER NOT NULL CHECK (balance_after >= 0),
@@ -28,6 +36,13 @@ const SCHEMA = `
 
   CREATE INDEX IF NOT EXISTS idx_transactions_account
     ON transactions (account_id, created_at);
+
+  CREATE TABLE IF NOT EXISTS idempotency_keys (
+    key          TEXT PRIMARY KEY,
+    fingerprint  TEXT NOT NULL,
+    transfer_id  TEXT NOT NULL REFERENCES transfers (id),
+    created_at   TEXT NOT NULL
+  );
 `;
 
 /**

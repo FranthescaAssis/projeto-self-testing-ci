@@ -40,6 +40,12 @@ class DocumentAlreadyRegisteredError extends DomainError {
   }
 }
 
+class IdempotencyConflictError extends DomainError {
+  constructor() {
+    super('IDEMPOTENCY_CONFLICT', 'A chave de idempotência já foi usada com dados diferentes');
+  }
+}
+
 module.exports = {
   DomainError,
   ValidationError,
@@ -47,4 +53,5 @@ module.exports = {
   AccountNotFoundError,
   DocumentRejectedError,
   DocumentAlreadyRegisteredError,
+  IdempotencyConflictError,
 };
