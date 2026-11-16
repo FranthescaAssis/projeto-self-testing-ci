@@ -13,6 +13,7 @@ class TransferService {
     runInTransaction,
     clock = () => new Date(),
     idGenerator = () => crypto.randomUUID(),
+    logger = console,
   }) {
     this.accountRepository = accountRepository;
     this.transactionRepository = transactionRepository;
@@ -22,6 +23,7 @@ class TransferService {
     this.runInTransaction = runInTransaction;
     this.clock = clock;
     this.idGenerator = idGenerator;
+    this.logger = logger;
   }
 
   async transfer({ sourceAccountId, targetAccountId, amount, idempotencyKey }) {
@@ -89,17 +91,27 @@ class TransferService {
       return { transfer, replayed };
     }
 
-    // Efeito colateral externo: só acontece depois do commit e apenas na
-    // primeira execução, nunca em repetições idempotentes.
-    await this.fraudGateway.notifyTransfer({
-      transferId: transfer.id,
-      sourceAccountId: transfer.sourceAccountId,
-      targetAccountId: transfer.targetAccountId,
-      amount: transfer.amount,
-      occurredAt: transfer.createdAt,
-    });
-
+    await this.notifyFraudGateway(transfer);
     return { transfer, replayed };
+  }
+
+  // Efeito colateral externo: só acontece depois do commit e apenas na primeira
+  // execução. A transferência já está efetivada, portanto uma falha do
+  // anti-fraude é registrada em log e não é propagada ao cliente (RNF07).
+  async notifyFraudGateway(transfer) {
+    try {
+      await this.fraudGateway.notifyTransfer({
+        transferId: transfer.id,
+        sourceAccountId: transfer.sourceAccountId,
+        targetAccountId: transfer.targetAccountId,
+        amount: transfer.amount,
+        occurredAt: transfer.createdAt,
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Falha ao notificar o anti-fraude sobre a transferência ${transfer.id}: ${error.message}`,
+      );
+    }
   }
 
   findAccount(accountId) {

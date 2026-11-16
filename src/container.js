@@ -49,6 +49,7 @@ function buildContainer(config, overrides = {}) {
     idempotencyRepository,
     fraudGateway,
     runInTransaction,
+    logger: overrides.logger,
   });
   const statementService = new StatementService({ accountRepository, transactionRepository });
 
