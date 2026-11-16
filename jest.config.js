@@ -21,4 +21,13 @@ module.exports = {
   collectCoverageFrom: ['src/**/*.js', '!src/server.js'],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'text-summary', 'lcov', 'json-summary'],
+  // Coverage gate: "jest --coverage" termina com erro se algum limite não for atingido.
+  coverageThreshold: {
+    global: {
+      branches: 80,
+      functions: 85,
+      lines: 85,
+      statements: 85,
+    },
+  },
 };
