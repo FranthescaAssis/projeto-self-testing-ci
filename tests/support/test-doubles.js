@@ -16,6 +16,14 @@ function createRegistryValidatorStub(status = 'REGULAR') {
   };
 }
 
+// Mock do gateway de anti-fraude: jest.fn() registra cada chamada para que o
+// teste verifique contagem e parâmetros enviados ao serviço externo.
+function createFraudGatewayMock() {
+  return {
+    notifyTransfer: jest.fn().mockResolvedValue(undefined),
+  };
+}
+
 // Relógio controlado: o teste decide que horas são.
 function createFixedClock(initialIso = '2026-11-10T12:00:00.000Z') {
   let current = new Date(initialIso);
@@ -26,4 +34,4 @@ function createFixedClock(initialIso = '2026-11-10T12:00:00.000Z') {
   return clock;
 }
 
-module.exports = { createRegistryValidatorStub, createFixedClock };
+module.exports = { createRegistryValidatorStub, createFraudGatewayMock, createFixedClock };
