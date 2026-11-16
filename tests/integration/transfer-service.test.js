@@ -208,6 +208,39 @@ describe('TransferService (SQLite em memória + mock do anti-fraude)', () => {
     });
   });
 
+  describe('anti-fraude indisponível (RNF07)', () => {
+    beforeEach(() => {
+      context.fraudGateway.notifyTransfer.mockRejectedValue(new Error('Anti-fraude respondeu com status 503'));
+    });
+
+    it('conclui a transferência mesmo quando a notificação falha', async () => {
+      const result = await context.transferService.transfer(transferRequest({ amount: 3000 }));
+
+      expect(result.transfer.amount).toBe(3000);
+      expect(context.accountRepository.findById(ana.id).balance).toBe(7000);
+      expect(context.accountRepository.findById(bruno.id).balance).toBe(5500);
+    });
+
+    it('registra a falha em log com o identificador da transferência', async () => {
+      const { transfer } = await context.transferService.transfer(transferRequest());
+
+      expect(context.logger.warn).toHaveBeenCalledTimes(1);
+      expect(context.logger.warn).toHaveBeenCalledWith(
+        `Falha ao notificar o anti-fraude sobre a transferência ${transfer.id}: Anti-fraude respondeu com status 503`,
+      );
+    });
+
+    it('mantém a idempotência após a falha: a repetição não debita de novo', async () => {
+      const request = transferRequest({ amount: 3000 });
+
+      await context.transferService.transfer(request);
+      const retry = await context.transferService.transfer(request);
+
+      expect(retry.replayed).toBe(true);
+      expect(context.accountRepository.findById(ana.id).balance).toBe(7000);
+    });
+  });
+
   describe('idempotência (RF07)', () => {
     it('informa que a primeira execução não é uma repetição', async () => {
       const result = await context.transferService.transfer(transferRequest());
