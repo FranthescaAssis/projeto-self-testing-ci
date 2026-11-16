@@ -2,6 +2,7 @@ const { createDatabase, createTransactionRunner } = require('../../src/repositor
 const { AccountRepository } = require('../../src/repositories/account-repository');
 const { TransactionRepository } = require('../../src/repositories/transaction-repository');
 const { TransferRepository } = require('../../src/repositories/transfer-repository');
+const { IdempotencyRepository } = require('../../src/repositories/idempotency-repository');
 const { AccountService } = require('../../src/services/account-service');
 const { TransferService } = require('../../src/services/transfer-service');
 const { createRegistryValidatorStub, createFraudGatewayMock, createFixedClock } = require('./test-doubles');
@@ -21,6 +22,7 @@ function createTestContext({ fraudGateway = createFraudGatewayMock() } = {}) {
   const accountRepository = new AccountRepository(db);
   const transactionRepository = new TransactionRepository(db);
   const transferRepository = new TransferRepository(db);
+  const idempotencyRepository = new IdempotencyRepository(db);
 
   const accountService = new AccountService({
     accountRepository,
@@ -34,6 +36,7 @@ function createTestContext({ fraudGateway = createFraudGatewayMock() } = {}) {
     accountRepository,
     transactionRepository,
     transferRepository,
+    idempotencyRepository,
     fraudGateway,
     runInTransaction,
     clock,

@@ -36,6 +36,13 @@ const SCHEMA = `
 
   CREATE INDEX IF NOT EXISTS idx_transactions_account
     ON transactions (account_id, created_at);
+
+  CREATE TABLE IF NOT EXISTS idempotency_keys (
+    key          TEXT PRIMARY KEY,
+    fingerprint  TEXT NOT NULL,
+    transfer_id  TEXT NOT NULL REFERENCES transfers (id),
+    created_at   TEXT NOT NULL
+  );
 `;
 
 /**
