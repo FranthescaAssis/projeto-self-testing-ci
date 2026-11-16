@@ -1,0 +1,9 @@
+node_modules/
+coverage/
+.env
+*.log
+logs/
+data/
+load/results/
+__pycache__/
+.venv/
