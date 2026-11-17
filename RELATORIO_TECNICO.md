@@ -106,7 +106,7 @@ O repositório adota **Trunk-Based Development**.
 - A `main` é o tronco único e deve estar sempre íntegra (lint e testes verdes).
 - Toda mudança nasce em uma branch curta, criada a partir da `main`, com um único objetivo e vida inferior a um dia.
 - A integração acontece somente por **pull request**, com o pipeline de CI como verificação obrigatória. Não há commits diretos na `main`.
-- Como o trabalho é individual, a revisão de cada pull request é uma autorrevisão guiada pelo checklist do modelo de PR (`.github/pull_request_template.md`), somada à validação automática do CI.
+- Como o trabalho é individual, a revisão de cada pull request é uma autorrevisão guiada pelo checklist incluído na descrição de cada pull request, somada à validação automática do CI.
 - Correções emergenciais usam branches `hotfix/*`, criadas a partir da `main`, com um teste de regressão escrito antes da correção.
 - Os merges são feitos com *merge commit*, para que cada branch fique visível no histórico.
 
